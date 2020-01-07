@@ -1,0 +1,129 @@
+import numpy as np
+from scipy.integrate import odeint
+import matplotlib.pyplot as plt
+
+'''This file compute the Euler-Maruyama method of tomato system:
+We use to solve the SDE system taking the stochastic differential in the parameter r_l^tilde dt=r_ldt +sigma_ldB_t.
+'''
+########################################################################################################################
+
+num_sims = 5
+########################################################################################################################
+def brownian_path_sampler(step_size,number_max_of_steps):
+    normal_sampler = np.sqrt(step_size)*np.random.randn(number_max_of_steps)
+    w_t = np.zeros(number_max_of_steps+1)
+    w_t[1:] = np.cumsum(normal_sampler)
+
+    return (normal_sampler,w_t)
+########################################################################################################################
+T = 1
+N = 2 ** 16
+dt = 1/N
+
+y_init = np.array([0.998999, 0.001, 0.000001, 0.92, 0.08])
+
+beta_p = 0.1
+r_l = 0.1
+sigma_l = 1
+r_i = 0.1
+b = 0.075
+beta_v = 0.003
+gamma = 0.06
+theta = 0.4
+mu = 0.3
+
+########################################################################################################################
+def F_func(y, t):
+    s_p = y[0]
+    l_p = y[1]
+    i_p = y[2]
+    s_v = y[3]
+    i_v = y[4]
+
+    s_p_prime_d = -beta_p * s_p * i_v + r_l * l_p + r_i * i_p
+    l_p_prime_d = beta_p * s_p * i_v - b * l_p - r_l * l_p
+    i_p_prime_d = b * l_p - r_i * i_p
+    s_v_prime_d = - beta_v * s_v * i_p - gamma * s_v + (1 - theta) * mu
+    i_v_prime_d = beta_v * s_v * i_p - gamma * i_v + theta * mu
+    rhs_d_np_array = np.array([s_p_prime_d, l_p_prime_d, i_p_prime_d, s_v_prime_d, i_v_prime_d])
+    return (rhs_d_np_array)
+
+########################################################################################################################
+def G_func(y, t):
+    s_p = y[0]
+    l_p = y[1]
+    i_p = y[2]
+    s_v = y[3]
+    i_v = y[4]
+
+    s_p_prime_s = sigma_l * l_p
+    l_p_prime_s = -sigma_l * l_p
+    i_p_prime_s = 0
+    s_v_prime_s = 0
+    i_v_prime_s =0
+    rhs_s_np_array = np.array([s_p_prime_s, l_p_prime_s, i_p_prime_s, s_v_prime_s, i_v_prime_s])
+    return (rhs_s_np_array)
+########################################################################################################################
+
+dB,B_t = brownian_path_sampler(dt,N) #generating the path
+
+ts = np.arange(0, T, dt)
+ys = np.zeros((5,N))
+
+ys[:,0] = y_init
+
+for _ in range(num_sims):
+
+    for i in range(1, ts.size):
+        t = (i-1) * dt
+        y = ys[:,i-1]
+        ys[:,i] = y + F_func(y, t) * dt + G_func(y, t) * dB[i-1]
+
+
+
+fig, axs = plt.subplots(3, 2, sharex=True)
+fig.subplots_adjust(left=0.08, right=0.98, wspace=0.3)
+ax = axs[0, 0]
+ax.plot(ts, ys[0,:],color = 'r', label="Stochastic Solution")
+ax.grid(True)
+
+ax = axs[0, 1]
+ax.plot(ts, ys[1,:],color = 'r', label="Stochastic Solution")
+
+ax = axs[1, 0]
+ax.plot(ts, ys[2,:],color = 'r', label="Stochastic Solution")
+
+ax = axs[1, 1]
+ax.plot(ts, ys[3,:],color = 'r', label="Stochastic Solution")
+
+ax = axs[2, 0]
+ax.plot(ts, ys[4,:],color = 'r', label="Stochastic Solution")
+
+########################################################################################################################
+######################################### DETERMINISTIC SOLUTION #######################################################
+def rhs(y, t_zero):
+    s_p = y[0]
+    l_p = y[1]
+    i_p = y[2]
+    s_v = y[3]
+    i_v = y[4]
+
+    s_p_prime = r_l * l_p + r_i * i_p - beta_p * s_p * i_v
+    l_p_prime = beta_p * s_p * i_v - b * l_p - r_l * l_p
+    i_p_prime = b * l_p - r_i * i_p
+    s_v_prime = - beta_v * s_v * i_p - gamma * s_v + (1 - theta) * mu
+    i_v_prime = beta_v * s_v * i_p - gamma * i_v + theta * mu
+    rhs_np_array = np.array([s_p_prime, l_p_prime, i_p_prime, s_v_prime, i_v_prime])
+    return (rhs_np_array)
+y_zero = np.array([0.998999, 0.001, 0.000001, 0.92, 0.08])
+t = np.linspace(0, 1, N)
+sol = odeint(rhs, y_zero, t)
+plt.plot(t, sol[:, 2], color ='b',label="Deterministic Solution")
+
+plt.xlabel('$t$')
+plt.ylabel('proporción de plantas infectadas $I_p$')
+plt.grid()
+plt.tight_layout()
+#######################################################################################################################
+plt.show()
+
