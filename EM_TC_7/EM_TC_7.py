@@ -27,9 +27,9 @@ y_init = np.array([0.998999, 0.001, 0.000001, 0.92, 0.08])
 
 beta_p = 0.1
 r_l = 0.01
-sigma_l = 0.1
-sigma_i = 0.1
-sigma_v = 0.1
+sigma_l = 15.1
+sigma_i = 15.1
+sigma_v = 15.1
 r_i = 0.01
 b = 0.075
 beta_v = 0.003
