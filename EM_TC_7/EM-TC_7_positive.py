@@ -81,19 +81,19 @@ ys[:,0] = y_init
 ys2[:,0] = y_init
 for _ in range(num_sims):
     for i in range(1, ts.size):
+        db_i = dB[i - 1]
         t = (i-1) * dt
-        y = ys[:,i-1]
+        y = ys[:, i-1] 
+        y_next =  y + F_func(y, t) * dt + G_func(y, t) * dB[i - 1]
 
-        if ys[1, i] < 0:
-                ys[1, i] = -ys[1, i]
-        if ys[2, i] < 0:
-                ys[2, i] = -ys[2, i]
-        if ys[3, i] < 0:
-                ys[3, i] = -ys[3, i]
-        if ys[4, i] < 0:
-                ys[4, i] = -ys[4, i]
-        #ys[:, i] = y + F_func(y, t) * dt + G_func(y, t) * (b_t[i]-b_t[i-1])
-        ys[:, i] = y + F_func(y, t) * dt + G_func(y, t) * dB[i - 1]
+        sign_y = np.sign(y_next)
+        for i in np.arange(4):
+            index = sign_y[i]
+            if np.sign(index) == -1:
+                db_i = -db_i 
+                
+        y_next = y + F_func(y, t) * dt + G_func(y, t) * db_i[i - 1]
+        ys[:, i] = y_next
         ys2[:,i] = ys[:,i]
 
 
