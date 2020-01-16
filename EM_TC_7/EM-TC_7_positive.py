@@ -11,18 +11,21 @@ gamma^tilde dt=gamma dt +sigma_v dB_t.
 ########################################################################################################################
 
 num_sims = 5
+
+
 ########################################################################################################################
-def brownian_path_sampler(step_size,number_max_of_steps):
-    normal_sampler = np.sqrt(step_size)*np.random.randn(number_max_of_steps)
-    w_t = np.zeros(number_max_of_steps+1)
+def brownian_path_sampler(step_size, number_max_of_steps):
+    normal_sampler = np.sqrt(step_size) * np.random.randn(number_max_of_steps)
+    w_t = np.zeros(number_max_of_steps + 1)
     w_t[1:] = np.cumsum(normal_sampler)
 
-    return (normal_sampler,w_t)
+    return (normal_sampler, w_t)
+
 
 ########################################################################################################################
 T = 70
-N = 2 ** 16
-dt = T/N
+N = 2 ** 8
+dt = T / N
 
 y_init = np.array([0.998999, 0.001, 0.000001, 0.92, 0.08])
 
@@ -37,7 +40,9 @@ beta_v = 0.003
 gamma = 0.06
 theta = 0.4
 mu = 0.3
-R_0 = np.sqrt(beta_v * mu * b * beta_p / (r_l * r_l * ( r_i + b) * gamma))
+R_0 = np.sqrt(beta_v * mu * b * beta_p / (r_l * r_l * (r_i + b) * gamma))
+
+
 ########################################################################################################################
 def F_func(y, t):
     s_p = y[0]
@@ -54,6 +59,7 @@ def F_func(y, t):
     rhs_d_np_array = np.array([s_p_prime_d, l_p_prime_d, i_p_prime_d, s_v_prime_d, i_v_prime_d])
     return (rhs_d_np_array)
 
+
 ########################################################################################################################
 def G_func(y, t):
     s_p = y[0]
@@ -69,60 +75,34 @@ def G_func(y, t):
     i_v_prime_s = -sigma_v * i_v
     rhs_s_np_array = np.array([s_p_prime_s, l_p_prime_s, i_p_prime_s, s_v_prime_s, i_v_prime_s])
     return (rhs_s_np_array)
+
+
 ########################################################################################################################
 
-dB,B_t = brownian_path_sampler(dt,N) #generating the path
+dB, B_t = brownian_path_sampler(dt, N)  # generating the path
 b_t = abs(B_t)
 ts = np.arange(0, T, dt)
-ys = np.zeros((5,N))
-ys2 = np.zeros((5,N))
+ys = np.zeros((5, N))
+ys2 = np.zeros((5, N))
 
-ys[:,0] = y_init
-ys2[:,0] = y_init
+ys[:, 0] = y_init
+ys2[:, 0] = y_init
 for _ in range(num_sims):
     for i in range(1, ts.size):
         db_i = dB[i - 1]
-        t = (i-1) * dt
-        y = ys[:, i-1] 
-        y_next =  y + F_func(y, t) * dt + G_func(y, t) * dB[i - 1]
+        t = (i - 1) * dt
+        y = ys[:, i - 1]
+        y_next = y + F_func(y, t) * dt + G_func(y, t) * dB[i - 1]
 
         sign_y = np.sign(y_next)
         for i in np.arange(4):
             index = sign_y[i]
             if np.sign(index) == -1:
-                db_i = -db_i 
-                
-        y_next = y + F_func(y, t) * dt + G_func(y, t) * db_i[i - 1]
+                db_i = -db_i
+
+        y_next = y + F_func(y, t) * dt + G_func(y, t) * db_i
         ys[:, i] = y_next
-        ys2[:,i] = ys[:,i]
-
-
-
-##################################
-
-
-#for i in range(ts.size):
-#    if ys2[0, i]<0:
-#            ys2[0,i] = -ys2[0,i]
-#    else :
- #           ys2[0, i] = ys2[0, i]
- #   if ys2[1, i] < 0 :
-#            ys2[1, i] = -ys2[1, i]
-#    else :
- #           ys2[1, i] = ys2[1, i]
-#    if ys2[2, i] < 0:
- #           ys2[2, i] = -ys2[2, i]
- #   else:
-#            ys2[2, i] = ys2[2, i]
- #   if ys2[3, i] < 0 :
-#            ys2[3, i] = -ys2[3, i]
- #   else :
-  #          ys2[3, i] = ys2[3, i]
- #   if ys2[4, i] < 0:
- #           ys2[4, i] = -ys2[4, i]
-#    else:
- #           ys2[4, i] = ys2[4, i]
-
+        ys2[:, i] = ys[:, i]
 
 ########################################################################################################################
 ######################################### DETERMINISTIC SOLUTION #######################################################
@@ -140,6 +120,8 @@ def rhs(y, t_zero):
     i_v_prime = beta_v * s_v * i_p - gamma * i_v + theta * mu
     rhs_np_array = np.array([s_p_prime, l_p_prime, i_p_prime, s_v_prime, i_v_prime])
     return (rhs_np_array)
+
+
 y_zero = np.array([0.998999, 0.001, 0.000001, 0.92, 0.08])
 t = np.linspace(0, T, N)
 sol = odeint(rhs, y_zero, t)
@@ -149,48 +131,48 @@ sol = odeint(rhs, y_zero, t)
 fig, axs = plt.subplots(3, 2, sharex=True)
 fig.subplots_adjust(left=0.08, right=0.98, wspace=0.3)
 ax0 = axs[0, 0]
-ax0.plot(ts, ys[0,:],color = 'r', label="Stochastic Solution")
+ax0.plot(ts, ys[0, :], color='r', label="Stochastic Solution")
 #ax0.plot(ts, ys2[0,:],color = 'g',linestyle=':', label="Stochastic abosulte Solution")
-ax0.plot(t, sol[:, 0], color ='b',label="Deterministic Solution")
+ax0.plot(t, sol[:, 0], color='b', label="Deterministic Solution")
 ax0.set_xlabel('$t$')
 ax0.set_ylabel('$S_p$')
 ax0.grid(True)
 
 ax1 = axs[0, 1]
-ax1.plot(ts, ys[1,:],color = 'r', label="Stochastic Solution")
+ax1.plot(ts, ys[1, :], color='r', label="Stochastic Solution")
 #ax1.plot(ts, ys2[1,:],color = 'g',linestyle=':', label="Stochastic aboslute Solution")
-ax1.plot(t, sol[:, 1], color ='b',label="Deterministic Solution")
+ax1.plot(t, sol[:, 1], color='b', label="Deterministic Solution")
 ax1.set_xlabel('$t$')
 ax1.set_ylabel('$L_p$')
 ax1.grid(True)
 
 ax2 = axs[1, 0]
-ax2.plot(ts, ys[2,:],color = 'r', label="Stochastic Solution")
+ax2.plot(ts, ys[2, :], color='r', label="Stochastic Solution")
 #ax2.plot(ts, ys2[2,:],color = 'g',linestyle=':', label="Stochastic absolute Solution")
-ax2.plot(t, sol[:, 2], color ='b',label="Deterministic Solution")
+ax2.plot(t, sol[:, 2], color='b', label="Deterministic Solution")
 ax2.set_xlabel('$t$')
 ax2.set_ylabel('$I_p$')
 ax2.grid(True)
 
 ax3 = axs[1, 1]
-ax3.plot(ts, ys[3,:],color = 'r', label="Stochastic Solution")
+ax3.plot(ts, ys[3, :], color='r', label="Stochastic Solution")
 #ax3.plot(ts, ys2[3,:],color = 'g',linestyle=':', label="Stochastic absolute Solution")
-ax3.plot(t, sol[:, 3], color ='b',label="Deterministic Solution")
+ax3.plot(t, sol[:, 3], color='b', label="Deterministic Solution")
 ax3.set_xlabel('$t$')
 ax3.set_ylabel('$S_v$')
 ax3.grid(True)
 
 ax4 = axs[2, 0]
-ax4.plot(ts, ys[4,:],color = 'r', label="Stochastic Solution")
+ax4.plot(ts, ys[4, :], color='r', label="Stochastic Solution")
 #ax4.plot(ts, ys2[4,:],color = 'g',linestyle=':', label="Stochastic absolute Solution")
-ax4.plot(t, sol[:, 4], color ='b',label="Deterministic Solution")
+ax4.plot(t, sol[:, 4], color='b', label="Deterministic Solution")
 ax4.set_xlabel('$t$')
 ax4.set_ylabel('$I_v$')
 ax4.grid(True)
 
 ax5 = axs[2, 1]
-ax5.plot(ts, B_t[0:N],color = 'k', label="Stochastic Solution")
-ax5.plot(ts, b_t[0:N],color = 'b', label="Stochastic Solution")
+ax5.plot(ts, B_t[0:N], color='k', label="Stochastic Solution")
+ax5.plot(ts, b_t[0:N], color='b', label="Stochastic Solution")
 ax5.set_xlabel('$t$')
 ax5.set_ylabel('$B_t$')
 ax5.grid(True)

@@ -69,6 +69,21 @@ def G_func(y, t):
     rhs_s_np_array = np.array([s_p_prime_s, l_p_prime_s, i_p_prime_s, s_v_prime_s, i_v_prime_s])
     return (rhs_s_np_array)
 
+def G_func_prime(y,t):
+    s_p = y[0]
+    l_p = y[1]
+    i_p = y[2]
+    s_v = y[3]
+    i_v = y[4]
+
+    DG = np.array([[ 0 , sigma_l, sigma_i, 0 , 0],
+         [ 0 , -sigma_l, 0, 0, 0],
+         [ 0 , 0, -sigma_i, 0 , 0],
+         [ 0 , 0, 0, -sigma_v, 0],
+         [ 0 , 0, 0, 0, -sigma_v]])
+
+    rhs_s_np_matrix = DG
+    return (rhs_s_np_matrix)
 ########################################################################################################################
 
 dB,B_t = brownian_path_sampler(dt,N) #generating the path
@@ -83,7 +98,7 @@ for _ in range(num_sims):
     for i in range(1, ts.size):
         t = (i-1) * dt
         y = ys[:,i-1]
-        ys[:,i] = y + F_func(y, t) * dt + G_func(y, t) * dB[i-1]
+        ys[:,i] = y + F_func(y, t) * dt + G_func(y, t) * dB[i-1] + 0.5 * (G_func(y,t) @ G_func_prime(y,t)) * (dB[i-1] ** 2 - dt)
     #plt.plot(ts, ys[2,:],color = 'r', label="Stochastic Solution")
 ########################################################################################################################
 ######################################### DETERMINISTIC SOLUTION #######################################################
@@ -142,6 +157,15 @@ ax4.plot(t, sol[:, 4], color ='b',label="Deterministic Solution")
 ax4.set_xlabel('$t$')
 ax4.set_ylabel('$I_v$')
 ax4.grid(True)
+
+plt.tight_layout()
+
+ax5 = axs[2, 1]
+ax5.plot(ts, B_t[0:N], color='k', label="Stochastic Solution")
+#ax5.plot(ts, b_t[0:N], color='b', label="Stochastic Solution")
+ax5.set_xlabel('$t$')
+ax5.set_ylabel('$B_t$')
+ax5.grid(True)
 
 plt.tight_layout()
 
